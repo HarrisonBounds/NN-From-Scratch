@@ -7,27 +7,45 @@ import numpy as np
 #                                                              #
 ################################################################
 #Read the data into a dataframe
-filepath = "C:\\Fashion_MNIST\\"
-data = pd.read_csv(filepath + "fashion_mnist.csv", low_memory=False)
+filepath = "E:\\Fashion_MNIST\\"
+train_data = pd.read_csv(filepath + "fashion-mnist_train.csv")
+test_data = pd.read_csv(filepath + "fashion-mnist_test.csv")
 
 #Convert the dataframe to a numpy array
-data = data.to_numpy()
-m, n = data.shape
-print("Shape of data: ", m, "x", n)
+train_data = np.array(train_data)
+test_data = np.array(test_data)
+
+print(train_data.dtype)
+print(test_data.dtype)
+
 
 #Split the data into testing and training sets
 
 #shuffle the data
-np.random.shuffle(data)
+np.random.shuffle(train_data)
+m_train, n_train = train_data.shape
+np.random.shuffle(test_data)
+m_test, n_test = test_data.shape
 
-#80% for train data and 20% for test data 
-train_percent = int(m * 0.80)
+print(f'Shape of training data: {m_train}x{n_train}')
+print(f'Shape of testing data: {m_test}x{n_test}')
 
-#row, col
-y_train = data[:train_percent, 0]
-X_train = data[:train_percent, 1:n]
-y_test = data[train_percent:m, 0]
-X_test = data[train_percent:m, 1:n]
+X_train = train_data[:, 1:n_train]
+y_train = train_data[:, 0]
+X_test = test_data[:, 1:n_test]
+y_test = test_data[:, 0]
+
+
+print("X_train shape: ", X_train.shape)
+print("y_train shape: ", y_train.shape)
+print("X_test shape: ", X_test.shape)
+print("y_test shape: ", y_test.shape)
+print("X_train type: ", X_train.dtype)
+print("y_train type: ", y_train.dtype)
+print("X_test type: ", X_test.dtype)
+print("y_test type: ", y_test.dtype)
+
+print("DONE")
 
 ################################################################
 #                                                              #
@@ -52,19 +70,20 @@ labels = {
 
 #Define number of neurons in each layer
 input_layer = X_train.shape[1]
-hidden_layer_1 = 128
-hidden_layer_2 = 64
+hidden_layer = 64
 output_layer = len(labels)
 
 #initialize random weights for each layer
-W1 = np.random.randn(input_layer, hidden_layer_1)
-W2 = np.random.randn(hidden_layer_1, hidden_layer_2)
-W3 = np.random.randn(hidden_layer_2, output_layer)
+W1 = np.random.randn(input_layer, hidden_layer)
+W2 = np.random.randn(hidden_layer, output_layer)
 
 #Initialize biases to zero for each layer
-b1 = np.zeros(hidden_layer_1)
-b2 = np.zeros(hidden_layer_2)
-b3 = np.zeros(output_layer)
+b1 = np.zeros(hidden_layer)
+b2 = np.zeros(output_layer)
+
+print(f'W1 shape: {W1.shape}')
+print(f'W2 shape: {W2.shape}')
+
 
 ################################################################
 #                                                              #
@@ -73,17 +92,12 @@ b3 = np.zeros(output_layer)
 ################################################################
 
 def relu(x):
-    if x < 0:
-        return 0
-    else:
-        return x
+    return np.maximum(0, x)
     
 #Convert output vector into probabilities
 def softmax(x):
-    e_x = np.exp(x)
-    sum_e_x = np.sum(e_x)
-
-    return e_x / sum_e_x
+    e_x = np.exp(x - np.max(x))
+    return e_x / np.sum(e_x)
 
 #Convert y_train into a vector where only the correct label appears
 def one_hot(y):
@@ -94,43 +108,36 @@ def one_hot(y):
 
 #Calculate loss by comparing the predictions to the ground truth
 def cross_entropy(y, p):
-    return -np.sum(y * np.log(p))
+    # Add a small epsilon to prevent division by zero and take the negative log
+    epsilon = 1e-10
+    return -np.sum(y * np.log(p + epsilon))
 
 loss = 0
 
+#Use relu activation function for forward pass
+A0 = X_train[0]
 
+Z1 = np.dot(A0, W1) + b1
 
-#Loop over all training images
-for i in range(X_train.shape[0]):
-    #Use relu activation function for forward pass
-    A0 = X_train[i, :]
-    # Make sure A0 is a NumPy array
-    print(type(A0))
+A1 = relu(Z1)
+Z2 = np.dot(A1, W2) + b2
 
-    # Check the shapes of A0, W1, and b1
-    print("A0 shape:", A0.shape)
-    print("W1 shape:", W1.shape)
-    print("b1 shape:", b1.shape)
+A2 = softmax(Z2)
 
-    Z1 = np.dot(A0, W1) + b1
+#one hot encode y_train to compare it to the networks predictions
+y_train_encoded = one_hot(y_train)
 
-    A1 = relu(Z1)
-    Z2 = np.dot(A1, W2) + b2
+#Compute the loss of the network using cross entropy loss
+loss = cross_entropy(y_train_encoded, A2)
 
-    A2 = relu(Z2)
-    Z3 = np.dot(A2, W3) + b3
+print("Loss:", loss)
 
-    #Use softmax for output layer
-    A3 = softmax(Z3)
+################################################################
+#                                                              #
+#                     Backwards Pass                           #
+#                                                              #
+################################################################
 
-    #one hot encode y_train to compare it to the networks predictions
-    y_train_encoded = one_hot(y_train)
-
-    #Compute the loss of the network using cross entropy loss
-    loss += cross_entropy(y_train_encoded, A3)
-
-print(loss)
-
-
+dZ2 = A2 - y_train_encoded
 
 
