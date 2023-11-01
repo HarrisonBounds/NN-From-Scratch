@@ -7,7 +7,7 @@ import numpy as np
 #                                                              #
 ################################################################
 #Read the data into a dataframe
-filepath = "E:\\Fashion_MNIST\\"
+filepath = "C:\\Fashion_MNIST\\"
 train_data = pd.read_csv(filepath + "fashion-mnist_train.csv")
 test_data = pd.read_csv(filepath + "fashion-mnist_test.csv")
 
@@ -30,10 +30,11 @@ m_test, n_test = test_data.shape
 print(f'Shape of training data: {m_train}x{n_train}')
 print(f'Shape of testing data: {m_test}x{n_test}')
 
-X_train = train_data[:, 1:n_train]
-y_train = train_data[:, 0]
-X_test = test_data[:, 1:n_test]
-y_test = test_data[:, 0]
+#Transposing the data to visualize better (now column matrices)
+X_train = train_data[:, 1:n_train].T
+y_train = train_data[:, 0].T
+X_test = test_data[:, 1:n_test].T
+y_test = test_data[:, 0].T
 
 
 print("X_train shape: ", X_train.shape)
@@ -70,7 +71,7 @@ labels = {
 
 #Define number of neurons in each layer
 input_layer = X_train.shape[1]
-hidden_layer = 64
+hidden_layer = 24
 output_layer = len(labels)
 
 #initialize random weights for each layer
@@ -78,8 +79,8 @@ W1 = np.random.randn(input_layer, hidden_layer)
 W2 = np.random.randn(hidden_layer, output_layer)
 
 #Initialize biases to zero for each layer
-b1 = np.zeros(hidden_layer)
-b2 = np.zeros(output_layer)
+b1 = np.zeros(hidden_layer).T
+b2 = np.zeros(output_layer).T
 
 print(f'W1 shape: {W1.shape}')
 print(f'W2 shape: {W2.shape}')
@@ -122,6 +123,7 @@ Z1 = np.dot(A0, W1) + b1
 A1 = relu(Z1)
 
 Z2 = np.dot(A1, W2) + b2
+print(Z2.shape)
 
 A2 = softmax(Z2)
 
@@ -145,6 +147,16 @@ print("A2 shape: ", A2.shape)
 #                     Backwards Pass                           #
 #                                                              #
 ################################################################
+
+
+#dL     =     dL     *     dA2     *      dZ2
+#dW2          dA2          dZ2            dW2
+
+dL_dA2 = A2 - y_train_encoded
+
+
+
+
 
 
 
