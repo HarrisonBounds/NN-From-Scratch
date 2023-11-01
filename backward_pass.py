@@ -120,6 +120,7 @@ A0 = X_train[0]
 Z1 = np.dot(A0, W1) + b1
 
 A1 = relu(Z1)
+
 Z2 = np.dot(A1, W2) + b2
 
 A2 = softmax(Z2)
@@ -132,12 +133,18 @@ loss = cross_entropy(y_train_encoded, A2)
 
 print("Loss:", loss)
 
+print("A0 shape: ", A0.shape)
+print("Z1 shape: ", Z1.shape)
+print("A1 shape: ", A1.shape)
+print("Z2 shape: ", Z2.shape)
+print("A2 shape: ", A2.shape)
+
+
 ################################################################
 #                                                              #
 #                     Backwards Pass                           #
 #                                                              #
 ################################################################
 
-dZ2 = A2 - y_train_encoded
 
 
