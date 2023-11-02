@@ -152,10 +152,9 @@ print("A2 shape: ", A2.shape)
 #dL     =     dL     *     dA2     *      dZ2
 #dW2          dA2          dZ2            dW2
 
-#derivative of cross entropy function
 
-#ERROR HERE:
-dL_dA2 = (y_train_encoded / A2) + ((1 - y_train_encoded) / (1 - A2) + epsilon)
+#Calculate backpropagation for second layer
+dL_dA2 = A2 - y_train_encoded
 
 print("dL/dA2 shape: ", dL_dA2.shape)
 
@@ -167,9 +166,32 @@ dZ2_dW2 = A1
 
 print("dZ2/dW2 shape: ", dZ2_dW2.shape)
 
-dL_dZ2 = dL_dA2 * dA2_dZ2
+dZ2_db2 = 1
 
-dL_dW2 = np.dot(dZ2_dW2.T, dL_dZ2)
+# Calculate dL/dW2
+dL_dW2 = np.dot(dZ2_dW2.T, (dL_dA2 * dA2_dZ2))
+
+dL_db2 = np.dot(dZ2_db2.T, (dL_dA2 * dA2_dZ2))
+
+print("dL/dW2 shape: ", dL_dW2.shape)
+
+learning_rate = 0.01
+
+#Update the weights and biases of the second layer
+W2 = W2 - (learning_rate * dL_dW2)
+
+#Calculate backpropagation for first layer
+
+dL_dA1 = np.dot(dL_dA2, W2.T)
+
+dA1_dZ1 = relu(Z1)
+
+dZ1_dW1 = A0
+
+
+
+
+
 
 
 
