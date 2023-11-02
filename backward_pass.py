@@ -30,12 +30,10 @@ m_test, n_test = test_data.shape
 print(f'Shape of training data: {m_train}x{n_train}')
 print(f'Shape of testing data: {m_test}x{n_test}')
 
-#Transposing the data to visualize better (now column matrices)
-X_train = train_data[:, 1:n_train].T
-y_train = train_data[:, 0].T
-X_test = test_data[:, 1:n_test].T
-y_test = test_data[:, 0].T
-
+X_train = train_data[:, 1:n_train]
+y_train = train_data[:, 0]
+X_test = test_data[:, 1:n_test]
+y_test = test_data[:, 0]
 
 print("X_train shape: ", X_train.shape)
 print("y_train shape: ", y_train.shape)
@@ -79,11 +77,14 @@ W1 = np.random.randn(input_layer, hidden_layer)
 W2 = np.random.randn(hidden_layer, output_layer)
 
 #Initialize biases to zero for each layer
-b1 = np.zeros(hidden_layer).T
-b2 = np.zeros(output_layer).T
+b1 = np.zeros(hidden_layer)
+b2 = np.zeros(output_layer)
 
 print(f'W1 shape: {W1.shape}')
 print(f'W2 shape: {W2.shape}')
+print(f'b1 shape: {b1.shape}')
+print(f'b2 shape: {b2.shape}')
+
 
 
 ################################################################
@@ -115,8 +116,7 @@ def cross_entropy(y, p):
 
 loss = 0
 
-#Use relu activation function for forward pass
-A0 = X_train[0]
+A0 = X_train
 
 Z1 = np.dot(A0, W1) + b1
 
@@ -152,7 +152,28 @@ print("A2 shape: ", A2.shape)
 #dL     =     dL     *     dA2     *      dZ2
 #dW2          dA2          dZ2            dW2
 
-dL_dA2 = A2 - y_train_encoded
+#derivative of cross entropy function
+
+#ERROR HERE:
+dL_dA2 = (y_train_encoded / A2) + ((1 - y_train_encoded) / (1 - A2) + epsilon)
+
+print("dL/dA2 shape: ", dL_dA2.shape)
+
+dA2_dZ2 = relu(Z2)
+
+print("dA2/dZ2 shape: ", dL_dA2.shape)
+
+dZ2_dW2 = A1
+
+print("dZ2/dW2 shape: ", dZ2_dW2.shape)
+
+dL_dZ2 = dL_dA2 * dA2_dZ2
+
+dL_dW2 = np.dot(dZ2_dW2.T, dL_dZ2)
+
+
+
+
 
 
 
