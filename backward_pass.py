@@ -66,25 +66,20 @@ labels = {
     9: 'ankle boot'
 }
 
+def build(X):
+    #Define number of neurons in each layer
+    input_layer = X.shape[1]
+    hidden_layer = 24
+    output_layer = len(labels)
 
-#Define number of neurons in each layer
-input_layer = X_train.shape[1]
-hidden_layer = 24
-output_layer = len(labels)
+def init(il, hl, ol):
+    #initialize random weights for each layer
+    W1 = np.random.randn(il, hl)
+    W2 = np.random.randn(hl, ol)
 
-#initialize random weights for each layer
-W1 = np.random.randn(input_layer, hidden_layer)
-W2 = np.random.randn(hidden_layer, output_layer)
-
-#Initialize biases to zero for each layer
-b1 = np.zeros(hidden_layer)
-b2 = np.zeros(output_layer)
-
-print(f'W1 shape: {W1.shape}')
-print(f'W2 shape: {W2.shape}')
-print(f'b1 shape: {b1.shape}')
-print(f'b2 shape: {b2.shape}')
-
+    #Initialize biases to zero for each layer
+    b1 = np.zeros(hl)
+    b2 = np.zeros(ol)
 
 
 ################################################################
@@ -114,33 +109,25 @@ def cross_entropy(y, p):
     epsilon = 1e-10
     return -np.sum(y * np.log(p + epsilon))
 
-loss = 0
+def forward(X, W1, W2, b1, b2, loss):
+    A0 = X
 
-A0 = X_train
+    Z1 = np.dot(A0, W1) + b1
 
-Z1 = np.dot(A0, W1) + b1
+    A1 = relu(Z1)
 
-A1 = relu(Z1)
+    Z2 = np.dot(A1, W2) + b2
+    print(Z2.shape)
 
-Z2 = np.dot(A1, W2) + b2
-print(Z2.shape)
+    A2 = softmax(Z2)
 
-A2 = softmax(Z2)
+    #one hot encode y_train to compare it to the networks predictions
+    y_train_encoded = one_hot(y_train)
 
-#one hot encode y_train to compare it to the networks predictions
-y_train_encoded = one_hot(y_train)
+    #Compute the loss of the network using cross entropy loss
+    loss = cross_entropy(y_train_encoded, A2)
 
-#Compute the loss of the network using cross entropy loss
-loss = cross_entropy(y_train_encoded, A2)
-
-print("Loss:", loss)
-
-print("A0 shape: ", A0.shape)
-print("Z1 shape: ", Z1.shape)
-print("A1 shape: ", A1.shape)
-print("Z2 shape: ", Z2.shape)
-print("A2 shape: ", A2.shape)
-
+    return Z1, A1, Z2, A2, loss
 
 ################################################################
 #                                                              #
@@ -152,59 +139,50 @@ print("A2 shape: ", A2.shape)
 #dL     =     dL     *     dA2     *      dZ2
 #dW2          dA2          dZ2            dW2
 
+def backward(A0, A1, A2, Z1, Z2, W2, y):
+    #Calculate backpropagation for second layer
+    dL_dA2 = A2 - y
 
-#Calculate backpropagation for second layer
-dL_dA2 = A2 - y_train_encoded
+    dA2_dZ2 = relu(Z2)
 
-print("dL/dA2 shape: ", dL_dA2.shape)
+    dZ2_dW2 = A1
 
-dA2_dZ2 = relu(Z2)
+    dZ2_db2 = 1
 
-print("dA2/dZ2 shape: ", dL_dA2.shape)
+    dL_dW2 = np.dot(dZ2_dW2.T, (dL_dA2 * dA2_dZ2))
 
-dZ2_dW2 = A1
+    dL_db2 = np.dot(dZ2_db2, (dL_dA2 * dA2_dZ2))
 
-print("dZ2/dW2 shape: ", dZ2_dW2.shape)
+    #Calculate backpropagation for first layer
+    dL_dA1 = np.dot(dL_dA2, W2.T)
 
-dZ2_db2 = 1
+    dA1_dZ1 = relu(Z1)
 
-# Calculate dL/dW2
-dL_dW2 = np.dot(dZ2_dW2.T, (dL_dA2 * dA2_dZ2))
+    dZ1_dW1 = A0
 
-dL_db2 = np.dot(dZ2_db2, (dL_dA2 * dA2_dZ2))
+    dZ1_db1 = 1
 
-print("dL/dW2 shape: ", dL_dW2.shape)
+    dL_dW1 = np.dot(dZ1_dW1.T, dL_dA1 * dA1_dZ1)
 
-learning_rate = 0.01
+    dL_db1 = np.dot(dZ1_db1, dL_dA1 * dA1_dZ1)
 
-#Update the weights and biases of the second layer
-W2 = W2 - (learning_rate * dL_dW2)
-b2 = b2 - (learning_rate * dL_db2)
-
-#Calculate backpropagation for first layer
-dL_dA1 = np.dot(dL_dA2, W2.T)
-
-dA1_dZ1 = relu(Z1)
-
-dZ1_dW1 = A0
-
-dZ1_db1 = 1
-
-dL_dW1 = np.dot(dZ1_dW1.T, dL_dA1 * dA1_dZ1)
-
-dL_db1 = np.dot(dZ1_db1, dL_dA1 * dA1_dZ1)
-
-#Update first layer 
-W1 = W1 - (learning_rate * dL_dW1)
-b1 = b1 - (learning_rate * dL_db1)
+    return dL_dW1, dL_db1, dL_dW2, dL_db2
 
 
+def update(dL_dW2, dL_db2, dL_dW1, dL_db1, lr):
+    #Update the weights and biases of the second layer
+    W2 = W2 - (lr * dL_dW2)
+    b2 = b2 - (lr * dL_db2)
+
+    #Update first layer 
+    W1 = W1 - (lr * dL_dW1)
+    b1 = b1 - (lr * dL_db1)
+
+    return W1, b1, W2, b2
 
 
-
-
-
-
+def main():
+    
 
 
 
