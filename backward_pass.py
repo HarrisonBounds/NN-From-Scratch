@@ -1,50 +1,26 @@
 import pandas as pd
 import numpy as np
 
-################################################################
-#                                                              #
-#                     SPLITTING DATA                           #
-#                                                              #
-################################################################
-#Read the data into a dataframe
-filepath = "C:\\Fashion_MNIST\\"
-train_data = pd.read_csv(filepath + "fashion-mnist_train.csv")
-test_data = pd.read_csv(filepath + "fashion-mnist_test.csv")
 
-#Convert the dataframe to a numpy array
-train_data = np.array(train_data)
-test_data = np.array(test_data)
+def split():
+    #Convert the dataframe to a numpy array
+    train_data = np.array(train_data)
+    test_data = np.array(test_data)
 
-print(train_data.dtype)
-print(test_data.dtype)
+    #shuffle the data
+    np.random.shuffle(train_data)
+    m_train, n_train = train_data.shape
+    np.random.shuffle(test_data)
+    m_test, n_test = test_data.shape
 
 
-#Split the data into testing and training sets
+    X_train = train_data[:, 1:n_train]
+    y_train = train_data[:, 0]
+    X_test = test_data[:, 1:n_test]
+    y_test = test_data[:, 0]
 
-#shuffle the data
-np.random.shuffle(train_data)
-m_train, n_train = train_data.shape
-np.random.shuffle(test_data)
-m_test, n_test = test_data.shape
+    return X_train, y_train, X_test, y_test, m_train, m_test
 
-print(f'Shape of training data: {m_train}x{n_train}')
-print(f'Shape of testing data: {m_test}x{n_test}')
-
-X_train = train_data[:, 1:n_train]
-y_train = train_data[:, 0]
-X_test = test_data[:, 1:n_test]
-y_test = test_data[:, 0]
-
-print("X_train shape: ", X_train.shape)
-print("y_train shape: ", y_train.shape)
-print("X_test shape: ", X_test.shape)
-print("y_test shape: ", y_test.shape)
-print("X_train type: ", X_train.dtype)
-print("y_train type: ", y_train.dtype)
-print("X_test type: ", X_test.dtype)
-print("y_test type: ", y_test.dtype)
-
-print("DONE")
 
 ################################################################
 #                                                              #
@@ -182,7 +158,12 @@ def update(dL_dW2, dL_db2, dL_dW1, dL_db1, lr):
 
 
 def main():
-    
+    #Read the data into a dataframe
+    filepath = "C:\\Fashion_MNIST\\"
+    train_data = pd.read_csv(filepath + "fashion-mnist_train.csv")
+    test_data = pd.read_csv(filepath + "fashion-mnist_test.csv")
+
+
 
 
 
