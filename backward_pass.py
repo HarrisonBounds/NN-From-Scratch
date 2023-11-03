@@ -171,7 +171,7 @@ dZ2_db2 = 1
 # Calculate dL/dW2
 dL_dW2 = np.dot(dZ2_dW2.T, (dL_dA2 * dA2_dZ2))
 
-dL_db2 = np.dot(dZ2_db2.T, (dL_dA2 * dA2_dZ2))
+dL_db2 = np.dot(dZ2_db2, (dL_dA2 * dA2_dZ2))
 
 print("dL/dW2 shape: ", dL_dW2.shape)
 
@@ -179,14 +179,24 @@ learning_rate = 0.01
 
 #Update the weights and biases of the second layer
 W2 = W2 - (learning_rate * dL_dW2)
+b2 = b2 - (learning_rate * dL_db2)
 
 #Calculate backpropagation for first layer
-
 dL_dA1 = np.dot(dL_dA2, W2.T)
 
 dA1_dZ1 = relu(Z1)
 
 dZ1_dW1 = A0
+
+dZ1_db1 = 1
+
+dL_dW1 = np.dot(dZ1_dW1.T, dL_dA1 * dA1_dZ1)
+
+dL_db1 = np.dot(dZ1_db1, dL_dA1 * dA1_dZ1)
+
+#Update first layer 
+W1 = W1 - (learning_rate * dL_dW1)
+b1 = b1 - (learning_rate * dL_db1)
 
 
 
