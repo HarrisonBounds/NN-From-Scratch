@@ -2,7 +2,8 @@ import pandas as pd
 import numpy as np
 
 
-def split():
+def split(train_data, test_data):
+    
     #Convert the dataframe to a numpy array
     train_data = np.array(train_data)
     test_data = np.array(test_data)
@@ -13,13 +14,15 @@ def split():
     np.random.shuffle(test_data)
     m_test, n_test = test_data.shape
 
-
     X_train = train_data[:, 1:n_train]
     y_train = train_data[:, 0]
     X_test = test_data[:, 1:n_test]
     y_test = test_data[:, 0]
 
-    return X_train, y_train, X_test, y_test, m_train, m_test
+    X_train = X_train / 255
+    X_test = X_test / 255
+
+    return X_train, y_train, X_test, y_test
 
 
 ################################################################
@@ -28,27 +31,8 @@ def split():
 #                                                              #
 ################################################################
 
-#Labels
-labels = {
-    0: 't-shirt/top',
-    1: 'trouser',
-    2: 'pullover',
-    3: 'dress',
-    4: 'coat',
-    5: 'sandal',
-    6: 'shirt',
-    7: 'sneaker',
-    8: 'bag',
-    9: 'ankle boot'
-}
-
-def build(X):
-    #Define number of neurons in each layer
-    input_layer = X.shape[1]
-    hidden_layer = 24
-    output_layer = len(labels)
-
 def init(il, hl, ol):
+
     #initialize random weights for each layer
     W1 = np.random.randn(il, hl)
     W2 = np.random.randn(hl, ol)
@@ -56,6 +40,8 @@ def init(il, hl, ol):
     #Initialize biases to zero for each layer
     b1 = np.zeros(hl)
     b2 = np.zeros(ol)
+
+    return W1, b1, W2, b2
 
 
 ################################################################
@@ -85,7 +71,7 @@ def cross_entropy(y, p):
     epsilon = 1e-10
     return -np.sum(y * np.log(p + epsilon))
 
-def forward(X, W1, W2, b1, b2, loss):
+def forward(X, W1, b1, W2, b2):
     A0 = X
 
     Z1 = np.dot(A0, W1) + b1
@@ -93,17 +79,10 @@ def forward(X, W1, W2, b1, b2, loss):
     A1 = relu(Z1)
 
     Z2 = np.dot(A1, W2) + b2
-    print(Z2.shape)
 
     A2 = softmax(Z2)
 
-    #one hot encode y_train to compare it to the networks predictions
-    y_train_encoded = one_hot(y_train)
-
-    #Compute the loss of the network using cross entropy loss
-    loss = cross_entropy(y_train_encoded, A2)
-
-    return Z1, A1, Z2, A2, loss
+    return Z1, A1, Z2, A2
 
 ################################################################
 #                                                              #
@@ -116,36 +95,38 @@ def forward(X, W1, W2, b1, b2, loss):
 #dW2          dA2          dZ2            dW2
 
 def backward(A0, A1, A2, Z1, Z2, W2, y):
-    #Calculate backpropagation for second layer
-    dL_dA2 = A2 - y
-
-    dA2_dZ2 = relu(Z2)
-
+    #dL_A2 * dA2_dZ2 can be written as dL_dZ2
+    #dL_dZ2 = A2 - y for softmax and categorical cross entropy 
+      
+    dL_dZ2 = A2 - y
     dZ2_dW2 = A1
-
     dZ2_db2 = 1
 
-    dL_dW2 = np.dot(dZ2_dW2.T, (dL_dA2 * dA2_dZ2))
+    dL_dW2 = np.dot(dL_dZ2, dZ2_dW2)
+    dL_db2 = np.mean((dL_dZ2 * dZ2_db2), axis=0, keepdims=True)
 
-    dL_db2 = np.dot(dZ2_db2, (dL_dA2 * dA2_dZ2))
+    dL_dA1 = np.dot((dL_dZ2).T, W2)
 
-    #Calculate backpropagation for first layer
-    dL_dA1 = np.dot(dL_dA2, W2.T)
-
-    dA1_dZ1 = relu(Z1)
+    #relu derivative
+    if Z1 > 0:
+        dA1_dZ1 = 1
+    elif Z1 <= 0: 
+        dA1_dZ1 = 0
 
     dZ1_dW1 = A0
 
     dZ1_db1 = 1
 
-    dL_dW1 = np.dot(dZ1_dW1.T, dL_dA1 * dA1_dZ1)
+    dL_dW1 = np.dot((dL_dA1 * dA1_dZ1), dZ1_dW1)
+    dL_db1 = np.mean((dL_dA1 * dA1_dZ1), dZ1_db1)
 
-    dL_db1 = np.dot(dZ1_db1, dL_dA1 * dA1_dZ1)
-
-    return dL_dW1, dL_db1, dL_dW2, dL_db2
+    return dL_dW2, dL_db2, dL_dW1, dL_db1
 
 
-def update(dL_dW2, dL_db2, dL_dW1, dL_db1, lr):
+
+
+
+def update(dL_dW2, dL_db2, dL_dW1, dL_db1, W1, b1, W2, b2, lr):
     #Update the weights and biases of the second layer
     W2 = W2 - (lr * dL_dW2)
     b2 = b2 - (lr * dL_db2)
@@ -158,10 +139,62 @@ def update(dL_dW2, dL_db2, dL_dW1, dL_db1, lr):
 
 
 def main():
+    #Labels
+    labels = {
+        0: 't-shirt/top',
+        1: 'trouser',
+        2: 'pullover',
+        3: 'dress',
+        4: 'coat',
+        5: 'sandal',
+        6: 'shirt',
+        7: 'sneaker',
+        8: 'bag',
+        9: 'ankle boot'
+    }
+
     #Read the data into a dataframe
     filepath = "C:\\Fashion_MNIST\\"
     train_data = pd.read_csv(filepath + "fashion-mnist_train.csv")
     test_data = pd.read_csv(filepath + "fashion-mnist_test.csv")
+
+    learning_rate = 0.01
+
+    X_train, y_train, X_test, y_test = split(train_data, test_data)
+
+    #one hot encode y_train to compare it to the networks predictions
+    y_train_encoded = one_hot(y_train)
+    y_test_encoded = one_hot(y_test)
+
+    #Define number of neurons in each layer
+    input_layer = X_train.shape[1]
+    hidden_layer = 24
+    output_layer = len(labels)
+
+    W1, b1, W2, b2 = init(input_layer, hidden_layer, output_layer)
+
+    for i in range(100):
+
+        Z1, A1, Z2, A2 = forward(X_train, y_train, W1, b1, W2, b2)
+
+        dL_dW1, dL_db1, dL_dW2, dL_db2, loss = backward(X_train, A1, A2, Z1, Z2, W2, b1, b2, y_train_encoded)
+
+        print(f'Loss for Iteration {i+1}: {loss}')
+
+        W1, b1, W2, b2 = update(dL_dW2, dL_db2, dL_dW1, dL_db1, W1, b1, W2, b2, learning_rate)
+
+
+main()
+
+
+
+
+
+
+
+
+
+
 
 
 
