@@ -81,6 +81,16 @@ def forward(X, W1, b1, W2, b2):
     Z2 = np.dot(A1, W2) + b2
 
     A2 = softmax(Z2)
+    print(f'Shape of W1: {W1.shape}')
+    print(f'Shape of b1: {b1.shape}')
+    print(f'Shape of W2: {W2.shape}')
+    print(f'Shape of b2: {b2.shape}')
+
+    print(f'Shape of Z1: {Z1.shape}')
+    print(f'Shape of A1: {A1.shape}')
+    print(f'Shape of Z2: {Z2.shape}')
+    print(f'Shape of A2: {A2.shape}')
+
 
     return Z1, A1, Z2, A2
 
@@ -94,46 +104,42 @@ def forward(X, W1, b1, W2, b2):
 #dL     =     dL     *     dA2     *      dZ2
 #dW2          dA2          dZ2            dW2
 
-def backward(A0, A1, A2, Z1, Z2, W2, y):
+def backward(A0, A1, A2, Z1, W2, y):
     #dL_A2 * dA2_dZ2 can be written as dL_dZ2
     #dL_dZ2 = A2 - y for softmax and categorical cross entropy 
       
     dL_dZ2 = A2 - y
+    print(f'Shape of dL_dZ2: {dL_dZ2.shape}')
+
     dZ2_dW2 = A1
-    dZ2_db2 = 1
 
-    dL_dW2 = np.dot(dL_dZ2, dZ2_dW2)
-    dL_db2 = np.mean((dL_dZ2 * dZ2_db2), axis=0, keepdims=True)
+    dL_dW2 = np.dot(dZ2_dW2.T, dL_dZ2)
+    print(f'Shape of dL_dW2: {dL_dW2.shape}')
+    dL_db2 = np.sum(dL_dZ2)
 
-    dL_dA1 = np.dot((dL_dZ2).T, W2)
+    dL_dA1 = np.dot(dL_dZ2, W2.T)
 
     #relu derivative
-    if Z1 > 0:
-        dA1_dZ1 = 1
-    elif Z1 <= 0: 
-        dA1_dZ1 = 0
+    dA1_dZ1 = np.where(Z1 > 0, 1, 0)
 
     dZ1_dW1 = A0
 
-    dZ1_db1 = 1
+    dL_dZ1 = dL_dA1 * dA1_dZ1
 
-    dL_dW1 = np.dot((dL_dA1 * dA1_dZ1), dZ1_dW1)
-    dL_db1 = np.mean((dL_dA1 * dA1_dZ1), dZ1_db1)
+    dL_dW1 = np.dot(dL_dZ1.T, dZ1_dW1)
+    dL_db1 = np.sum(dL_dZ1)
 
     return dL_dW2, dL_db2, dL_dW1, dL_db1
 
 
-
-
-
 def update(dL_dW2, dL_db2, dL_dW1, dL_db1, W1, b1, W2, b2, lr):
     #Update the weights and biases of the second layer
-    W2 = W2 - (lr * dL_dW2)
-    b2 = b2 - (lr * dL_db2)
+    W2 = W2 - lr * dL_dW2
+    b2 = b2 - lr * dL_db2
 
     #Update first layer 
-    W1 = W1 - (lr * dL_dW1)
-    b1 = b1 - (lr * dL_db1)
+    W1 = W1 - lr * dL_dW1.T
+    b1 = b1 - lr * dL_db1
 
     return W1, b1, W2, b2
 
@@ -175,10 +181,11 @@ def main():
 
     for i in range(100):
 
-        Z1, A1, Z2, A2 = forward(X_train, y_train, W1, b1, W2, b2)
+        Z1, A1, Z2, A2 = forward(X_train, W1, b1, W2, b2)
 
-        dL_dW1, dL_db1, dL_dW2, dL_db2, loss = backward(X_train, A1, A2, Z1, Z2, W2, b1, b2, y_train_encoded)
+        dL_dW2, dL_db2, dL_dW1, dL_db1 = backward(X_train, A1, A2, Z1, W2, y_train_encoded)
 
+        loss = cross_entropy(y_train_encoded, A2)
         print(f'Loss for Iteration {i+1}: {loss}')
 
         W1, b1, W2, b2 = update(dL_dW2, dL_db2, dL_dW1, dL_db1, W1, b1, W2, b2, learning_rate)
